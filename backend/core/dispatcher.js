@@ -10,45 +10,41 @@ import { medicalAgentHandler } from "../agents/medical.js";
 import { ngoAgentHandler } from "../agents/ngo.js";
 import { printAgentResponse } from "../utils/printer.js";
 
-// Load environment variables
+// Setup .env
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
 const apiKey = process.env.PERPLEXITY_API_KEY;
 
-// Map known agent types to handlers
+// ✅ Flexible keywords
 const AGENT_HANDLERS = {
-  "firefighter department": fireAgentHandler,
-  "police department": policeAgentHandler,
-  "emergency medical services": medicalAgentHandler,
-  "medical department": medicalAgentHandler,
-  "ngo": ngoAgentHandler,
-  "relief organization": ngoAgentHandler,
+  fire: fireAgentHandler,
+  police: policeAgentHandler,
+  medical: medicalAgentHandler,
+  ngo: ngoAgentHandler,
 };
 
 export async function mediate(inputText) {
   console.log("🧭 Dispatcher received input:", inputText);
 
   const prompt = `
-You are the dispatcher for a national disaster response system.
-Given a user's emergency report, determine which departments should respond and provide their action plans.
-
-Respond ONLY with a JSON array like:
+You are a dispatcher for a national disaster response system.
+Given the emergency report, return the list of agents to activate and their instructions in JSON:
 
 [
   {
-    "agent": "Police Department",
-    "instructions": "Secure evacuation route and control crowd near downtown LA."
+    "agent": "Fire Department",
+    "instructions": "Deploy two strike teams to the wildfire front and coordinate evacuation with police."
   },
   {
-    "agent": "Firefighter Department",
-    "instructions": "Deploy two strike teams to wildfire front on the western perimeter."
+    "agent": "Emergency Medical Services",
+    "instructions": "Triage children affected by smoke inhalation."
   }
 ]
 
-Do NOT include markdown, explanation, or commentary.
-User Report: "${inputText}"
+Respond ONLY with raw JSON. No markdown or explanations.
+Emergency report: "${inputText}"
 `;
 
   try {
@@ -73,9 +69,10 @@ User Report: "${inputText}"
     console.log("\n📦 Dispatcher routing to agents:");
 
     for (const task of tasks) {
-      const agentKey = task.agent.toLowerCase();
+      const normalized = task.agent.toLowerCase().replace("department", "").replace("services", "").trim();
+
       const handler = Object.entries(AGENT_HANDLERS).find(([key]) =>
-        agentKey.includes(key)
+        normalized.includes(key)
       )?.[1];
 
       if (handler) {
@@ -87,6 +84,6 @@ User Report: "${inputText}"
       }
     }
   } catch (err) {
-    console.error("❌ Dispatcher error:", err.message);
+    console.error("❌ Dispatcher error:", err.response?.data || err.message);
   }
 }

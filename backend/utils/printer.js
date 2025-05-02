@@ -19,7 +19,7 @@ export function printAgents(mcpArray) {
   
   // Individual agent output (after handler runs)
   export function printAgentResponse(agentName, responseText) {
-    console.log(`\n🔧 ${agentName} Agent Response:\n`);
+    console.log(`\n🧠 ${agentName} Agent Response:\n`);
     console.log(responseText);
   }
   
